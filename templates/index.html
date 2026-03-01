@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Sell your digital products</h2>
+  <p>Users can register, pay, and unlock instant access to files.</p>
+</section>
+<section class="grid">
+  {% for product in products %}
+  <article class="card">
+    <h3>{{ product.title }}</h3>
+    <p>{{ product.description }}</p>
+    <strong>${{ '%.2f'|format(product.price) }}</strong>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}
