@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>User Dashboard</h2>
+
+<section>
+  <h3>My Library</h3>
+  {% if purchased_products %}
+  <ul>
+    {% for p in purchased_products %}
+    <li>
+      <strong>{{ p.title }}</strong>
+      — <a href="{{ p.file_url }}" target="_blank" rel="noopener">Download</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No products unlocked yet.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h3>Available Products</h3>
+  <div class="grid">
+    {% for p in products %}
+    <article class="card">
+      <h4>{{ p.title }}</h4>
+      <p>{{ p.description }}</p>
+      <p>${{ '%.2f'|format(p.price) }}</p>
+      {% if p.owned %}
+      <span class="badge">Owned</span>
+      {% else %}
+      <form method="post" action="{{ url_for('buy', product_id=p.id) }}">
+        <button type="submit">Create Order</button>
+      </form>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <h3>Orders</h3>
+  {% if orders %}
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Product</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td>#{{ o.id }}</td>
+        <td>{{ o.product_title }}</td>
+        <td>${{ '%.2f'|format(o.amount) }}</td>
+        <td>{{ o.status }}</td>
+        <td>
+          {% if o.status == 'pending' %}
+          <form method="post" action="{{ url_for('pay', order_id=o.id) }}">
+            <button type="submit">Pay now</button>
+          </form>
+          {% else %}
+          Paid ✅
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No orders yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
