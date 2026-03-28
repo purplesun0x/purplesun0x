@@ -23,7 +23,7 @@ function renderHeader(string $title, ?array $user = null): void
             .btn-danger { background: #b91c1c; }
             .mt-1 { margin-top: 8px; }
             .mt-2 { margin-top: 16px; }
-            input, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 6px; }
+            input, textarea, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 6px; }
             label { font-weight: bold; font-size: 14px; }
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; }

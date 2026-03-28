@@ -33,6 +33,8 @@ function runMigrations(PDO $db): void
         user_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
         amount REAL NOT NULL,
+        payment_provider TEXT NOT NULL DEFAULT 'manual',
+        payment_reference TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(product_id) REFERENCES products(id)
@@ -49,6 +51,23 @@ function runMigrations(PDO $db): void
         FOREIGN KEY(buyer_id) REFERENCES users(id),
         FOREIGN KEY(order_id) REFERENCES orders(id)
     )");
+
+    $db->exec("CREATE TABLE IF NOT EXISTS checkout_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_token TEXT NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        gateway TEXT NOT NULL,
+        gateway_reference TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL,
+        completed_at TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(product_id) REFERENCES products(id)
+    )");
+
+    ensureColumn($db, 'orders', 'payment_provider', "TEXT NOT NULL DEFAULT 'manual'");
+    ensureColumn($db, 'orders', 'payment_reference', "TEXT NOT NULL DEFAULT ''");
 
     $adminStmt = $db->prepare('SELECT COUNT(*) FROM users WHERE role = :role');
     $adminStmt->execute([':role' => 'admin']);
@@ -85,9 +104,27 @@ function runMigrations(PDO $db): void
     }
 }
 
+function ensureColumn(PDO $db, string $table, string $column, string $definition): void
+{
+    $stmt = $db->query('PRAGMA table_info(' . $table . ')');
+    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($columns as $row) {
+        if (($row['name'] ?? '') === $column) {
+            return;
+        }
+    }
+
+    $db->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition);
+}
+
 function createReferralCode(): string
 {
     return strtoupper(bin2hex(random_bytes(4)));
+}
+
+function createSessionToken(): string
+{
+    return bin2hex(random_bytes(24));
 }
 
 function currentUser(PDO $db): ?array
@@ -112,6 +149,14 @@ function redirectTo(string $path): void
 {
     header('Location: ' . $path);
     exit;
+}
+
+function appUrl(string $path = ''): string
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+
+    return $scheme . '://' . $host . $path;
 }
 
 function requireLogin(PDO $db): array
@@ -146,6 +191,37 @@ function flash(string $key): ?string
     unset($_SESSION[$key]);
 
     return $value;
+}
+
+function completeOrderAndCommissions(PDO $db, array $user, array $product, string $gateway, string $reference): void
+{
+    $orderInsert = $db->prepare('INSERT INTO orders (user_id, product_id, amount, payment_provider, payment_reference, created_at) VALUES (:user_id, :product_id, :amount, :payment_provider, :payment_reference, :created_at)');
+    $orderInsert->execute([
+        ':user_id' => $user['id'],
+        ':product_id' => $product['id'],
+        ':amount' => $product['price'],
+        ':payment_provider' => $gateway,
+        ':payment_reference' => $reference,
+        ':created_at' => date('c'),
+    ]);
+
+    $orderId = (int)$db->lastInsertId();
+
+    if (!empty($user['referred_by'])) {
+        $commission = round((float)$product['price'] * 0.10, 2);
+
+        $db->prepare('UPDATE users SET referral_earnings = referral_earnings + :amount WHERE id = :id')
+            ->execute([':amount' => $commission, ':id' => $user['referred_by']]);
+
+        $db->prepare('INSERT INTO referral_commissions (referrer_id, buyer_id, order_id, commission_amount, created_at) VALUES (:referrer_id, :buyer_id, :order_id, :commission_amount, :created_at)')
+            ->execute([
+                ':referrer_id' => $user['referred_by'],
+                ':buyer_id' => $user['id'],
+                ':order_id' => $orderId,
+                ':commission_amount' => $commission,
+                ':created_at' => date('c'),
+            ]);
+    }
 }
 
 runMigrations($db);

@@ -37,19 +37,20 @@ renderHeader('User Dashboard', $user);
 <h2 class="mt-2">Purchased Products</h2>
 <table>
     <thead>
-    <tr><th>Product</th><th>Amount</th><th>Date</th><th>Download</th></tr>
+    <tr><th>Product</th><th>Amount</th><th>Gateway</th><th>Date</th><th>Download</th></tr>
     </thead>
     <tbody>
     <?php foreach ($orders as $order): ?>
         <tr>
             <td><?php echo htmlspecialchars($order['title']); ?></td>
             <td>$<?php echo number_format((float)$order['amount'], 2); ?></td>
+            <td><?php echo strtoupper(htmlspecialchars($order['payment_provider'] ?? 'manual')); ?></td>
             <td><?php echo htmlspecialchars(date('Y-m-d', strtotime($order['created_at']))); ?></td>
             <td><a class="btn btn-secondary" href="<?php echo htmlspecialchars($order['file_url']); ?>">Download</a></td>
         </tr>
     <?php endforeach; ?>
     <?php if (count($orders) === 0): ?>
-        <tr><td colspan="4">No purchases yet.</td></tr>
+        <tr><td colspan="5">No purchases yet.</td></tr>
     <?php endif; ?>
     </tbody>
 </table>
