@@ -1,0 +1,15 @@
+{
+  "name": "purplesun/backend",
+  "description": "API-first Laravel backend for PurpleSun e-commerce",
+  "type": "project",
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^11.0",
+    "laravel/sanctum": "^4.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  }
+}
