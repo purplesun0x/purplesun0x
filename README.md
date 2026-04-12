@@ -28,7 +28,8 @@ schema.sql
 3. Import `schema.sql` via phpMyAdmin.
 4. Update DB credentials in `config/database.php`.
 5. Update app URL and payment keys in `config/config.php`.
-6. Run in browser:
+6. Run in browser (either URL works):
+   - `http://localhost/purplesun0x`
    - `http://localhost/purplesun0x/public`
 
 ## Test Credentials
